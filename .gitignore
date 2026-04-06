@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+local.properties
+
+# Build outputs
+*.apk
+*.ap_
+*.aab
+
+# Generated files
+dex/
+apk/
+output/
+outputs/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
+
+# Local config (contains API keys / secrets)
+app/google-services.json

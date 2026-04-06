@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:padding="24dp">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/settingsTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Settings"
+        android:textColor="@color/primary"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:fontFamily="monospace"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp" />
+
+    <!-- Lean Threshold Section -->
+    <TextView
+        android:id="@+id/leanThresholdLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lean Threshold"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/settingsTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="32dp" />
+
+    <TextView
+        android:id="@+id/leanThresholdDesc"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="How many degrees of lean counts as a corner (8°–20°)"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/leanThresholdLabel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/leanThresholdValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="12°"
+        android:textColor="@color/primary"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:fontFamily="monospace"
+        app:layout_constraintTop_toBottomOf="@id/leanThresholdDesc"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <SeekBar
+        android:id="@+id/leanThresholdSlider"
+        android:layout_width="0dp"
+        android:layout_height="32dp"
+        android:min="8"
+        android:max="20"
+        android:progress="12"
+        android:progressTint="@color/primary"
+        app:layout_constraintTop_toBottomOf="@id/leanThresholdValue"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <!-- Speed Threshold Section -->
+    <TextView
+        android:id="@+id/speedThresholdLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Speed Threshold"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/leanThresholdSlider"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="32dp" />
+
+    <TextView
+        android:id="@+id/speedThresholdDesc"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Minimum speed to count corners (filters junctions)"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/speedThresholdLabel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/speedThresholdValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="20 km/h"
+        android:textColor="@color/primary"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:fontFamily="monospace"
+        app:layout_constraintTop_toBottomOf="@id/speedThresholdDesc"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <SeekBar
+        android:id="@+id/speedThresholdSlider"
+        android:layout_width="0dp"
+        android:layout_height="32dp"
+        android:min="10"
+        android:max="50"
+        android:progress="20"
+        android:progressTint="@color/primary"
+        app:layout_constraintTop_toBottomOf="@id/speedThresholdValue"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <!-- Save Button -->
+    <Button
+        android:id="@+id/saveSettingsButton"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:text="Save Settings"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:backgroundTint="@color/primary"
+        app:layout_constraintTop_toBottomOf="@id/speedThresholdSlider"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="48dp" />
+
+    <!-- Back Button -->
+    <Button
+        android:id="@+id/backButton"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:text="Back"
+        android:textSize="18sp"
+        android:backgroundTint="@color/secondary"
+        app:layout_constraintTop_toBottomOf="@id/saveSettingsButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

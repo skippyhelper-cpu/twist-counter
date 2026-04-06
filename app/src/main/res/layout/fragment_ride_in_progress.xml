@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:padding="24dp">
+
+    <!-- Ride in progress banner -->
+    <TextView
+        android:id="@+id/rideInProgressTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/ride_in_progress"
+        android:textColor="@color/primary"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp" />
+
+    <!-- Corner count (hero number) -->
+    <TextView
+        android:id="@+id/cornerCountLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/corners"
+        android:textColor="@color/text_secondary"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/rideInProgressTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="48dp" />
+
+    <TextView
+        android:id="@+id/cornerCountValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textColor="@color/primary"
+        android:textSize="72sp"
+        android:textStyle="bold"
+        android:fontFamily="monospace"
+        app:layout_constraintTop_toBottomOf="@id/cornerCountLabel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Max lean indicators -->
+    <LinearLayout
+        android:id="@+id/leanIndicators"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/cornerCountValue"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp">
+
+        <!-- Left lean -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/max_lean_left"
+                android:textColor="@color/lean_left"
+                android:textSize="12sp" />
+            
+            <TextView
+                android:id="@+id/maxLeanLeft"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0.0°"
+                android:textColor="@color/lean_left"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+
+        <!-- Right lean -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/max_lean_right"
+                android:textColor="@color/lean_right"
+                android:textSize="12sp" />
+            
+            <TextView
+                android:id="@+id/maxLeanRight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0.0°"
+                android:textColor="@color/lean_right"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Speed and distance -->
+    <LinearLayout
+        android:id="@+id/speedDistanceRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/leanIndicators"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/avg_speed"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+            
+            <TextView
+                android:id="@+id/currentSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 km/h"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/distance"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+            
+            <TextView
+                android:id="@+id/distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0.0 km"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Recalibrate button -->
+    <TextView
+        android:id="@+id/recalibrateButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Recalibrate"
+        android:textColor="#555555"
+        android:textSize="12sp"
+        android:padding="12dp"
+        app:layout_constraintBottom_toTopOf="@id/endRideButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="8dp" />
+
+    <!-- End ride button -->
+    <Button
+        android:id="@+id/endRideButton"
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        android:text="@string/end_ride"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:backgroundTint="@color/secondary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="32dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

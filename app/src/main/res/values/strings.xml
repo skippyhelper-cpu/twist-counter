@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TwistCounter</string>
+    <string name="subtitle">Lean-based corner counting</string>
+    <string name="start_ride">Start Ride</string>
+    <string name="ride_history">Ride History</string>
+    <string name="no_rides_yet">No rides yet. Start your first ride!</string>
+    <string name="calibrating">Calibrating...</string>
+    <string name="calibration_instruction">Sit on bike and hold steady</string>
+    <string name="calibrated">Calibrated ✓</string>
+    <string name="ride_in_progress">Ride in Progress</string>
+    <string name="end_ride">End Ride</string>
+    <string name="corners">Corners</string>
+    <string name="max_lean_left">Max Lean Left</string>
+    <string name="max_lean_right">Max Lean Right</string>
+    <string name="distance">Distance</string>
+    <string name="duration">Duration</string>
+    <string name="avg_speed">Avg Speed</string>
+    <string name="max_speed">Max Speed</string>
+    <string name="save_ride">Save Ride</string>
+    <string name="discard_ride">Discard</string>
+    <string name="share_ride">Share</string>
+    <string name="notification_channel_name">Ride Logging</string>
+    <string name="notification_channel_description">Background ride logging notification</string>
+    <string name="notification_title">Ride in Progress</string>
+    <string name="notification_content">Logging corners and lean angles</string>
+    <string name="notification_content_with_count">Corners: %d | Logging lean angles</string>
+    <string name="lean_threshold">Lean Threshold</string>
+    <string name="speed_threshold">Speed Threshold</string>
+    <string name="save_settings">Save Settings</string>
+    <string name="back">Back</string>
+</resources>
