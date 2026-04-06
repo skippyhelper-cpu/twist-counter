@@ -3,6 +3,7 @@ package dev.filips.twistcounter.presentation
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -70,12 +71,16 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun checkPermissionsAndStart() {
-        val permissions = arrayOf(
+        val permissions = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACTIVITY_RECOGNITION,
             Manifest.permission.POST_NOTIFICATIONS
         )
+        
+        // ACTIVITY_RECOGNITION only needed for Android 14+ (API 34+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            permissions.add(Manifest.permission.ACTIVITY_RECOGNITION)
+        }
 
         val needsRequest = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED

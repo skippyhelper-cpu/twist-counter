@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.filips.twistcounter.data.local.toEntity
 import dev.filips.twistcounter.data.repository.RideRepository
 import dev.filips.twistcounter.domain.model.CornerDirection
 import dev.filips.twistcounter.domain.model.CornerEvent
@@ -32,6 +33,7 @@ import javax.inject.Inject
 class RideViewModel @Inject constructor(
     application: Application,
     private val rideRepository: RideRepository,
+    private val cornerEventDao: dev.filips.twistcounter.data.local.CornerEventDao,
     private val sensorManagerUseCase: SensorManagerUseCase,
     private val locationManagerUseCase: LocationManagerUseCase
 ) : AndroidViewModel(application) {
@@ -80,6 +82,7 @@ class RideViewModel @Inject constructor(
     val currentRideSummaryLiveData = currentRideSummary.asLiveData()
     
     private var currentRideId: UUID? = null
+    private val cornerEvents = mutableListOf<CornerEvent>()
     private val leanSamples = mutableListOf<LeanSample>()
     
     init {
@@ -123,8 +126,21 @@ class RideViewModel @Inject constructor(
         if (_rideState.value == RideState.InProgress) return // Prevent double-start
         currentRideId = UUID.randomUUID()
         leanSamples.clear()
+        cornerEvents.clear()
 
         _rideState.value = RideState.InProgress
+        
+        // Set up corner event persistence callback
+        sensorManagerUseCase.onCornerDetected = { cornerEvent ->
+            // Assign ride ID and add to list
+            val eventWithRideId = cornerEvent.copy(rideId = currentRideId!!)
+            cornerEvents.add(eventWithRideId)
+        }
+        
+        // Set up accelerometer-based speed fallback for GPS outages
+        sensorManagerUseCase.onAccelSpeedUpdate = { accelMagnitude, dt ->
+            locationManagerUseCase.updateSpeedFromAccelerometer(accelMagnitude, dt)
+        }
         
         // Start sensor tracking
         sensorManagerUseCase.startRideTracking(viewModelScope)
@@ -142,6 +158,10 @@ class RideViewModel @Inject constructor(
     
     fun endRide() {
         _rideState.value = RideState.Finished
+        
+        // Clear corner detection callback
+        sensorManagerUseCase.onCornerDetected = null
+        sensorManagerUseCase.onAccelSpeedUpdate = null
         
         // Stop sensors
         sensorManagerUseCase.stopSensors()
@@ -178,11 +198,16 @@ class RideViewModel @Inject constructor(
         )
         
         // Build RideSummary from in-memory data BEFORE saving
-        val inMemoryHistogram = calculateInMemoryLeanHistogram()
+        val histogramData = sensorManagerUseCase.getInMemoryLeanHistogram()
+        val leanHistogram = LeanHistogram(
+            buckets = histogramData.map { (range, count) ->
+                LeanBucket(range.start, range.end, count)
+            }
+        )
         val summary = RideSummary(
             ride = ride,
-            cornerEvents = emptyList(), // Would need corner event tracking
-            leanHistogram = inMemoryHistogram
+            cornerEvents = cornerEvents.toList(),
+            leanHistogram = leanHistogram
         )
         
         // Set summary immediately for display
@@ -192,42 +217,18 @@ class RideViewModel @Inject constructor(
             // Save ride to database
             rideRepository.saveRide(ride)
             
+            // Save corner events
+            if (cornerEvents.isNotEmpty()) {
+                cornerEvents.forEach { event ->
+                    cornerEventDao.insert(event.toEntity())
+                }
+            }
+            
             // Save lean samples if available
             if (leanSamples.isNotEmpty()) {
                 rideRepository.saveLeanSamples(leanSamples)
             }
         }
-    }
-    
-    private fun calculateInMemoryLeanHistogram(): LeanHistogram {
-        // Create buckets: 0-10, 10-20, 20-30, 30-40, 40-50, 50+
-        val buckets = listOf(
-            LeanBucket(0f, 10f, 0),
-            LeanBucket(10f, 20f, 0),
-            LeanBucket(20f, 30f, 0),
-            LeanBucket(30f, 40f, 0),
-            LeanBucket(40f, 50f, 0),
-            LeanBucket(50f, 90f, 0)
-        ).toMutableList()
-        
-        // Use max lean values to estimate distribution
-        val maxLean = maxOf(maxLeanLeft.value, maxLeanRight.value)
-        if (maxLean > 0) {
-            // Simplified: just mark the bucket containing the max lean
-            val bucketIndex = when {
-                maxLean < 10 -> 0
-                maxLean < 20 -> 1
-                maxLean < 30 -> 2
-                maxLean < 40 -> 3
-                maxLean < 50 -> 4
-                else -> 5
-            }
-            // Set a count proportional to corner count for visualization
-            val count = cornerCount.value.coerceAtLeast(1)
-            buckets[bucketIndex] = buckets[bucketIndex].copy(count = count)
-        }
-        
-        return LeanHistogram(buckets)
     }
     
     fun discardRide() {
