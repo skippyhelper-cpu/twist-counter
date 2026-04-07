@@ -71,6 +71,9 @@ dependencies {
 
     // Location Services
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    
+    // OpenStreetMap (free, no API key needed)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")

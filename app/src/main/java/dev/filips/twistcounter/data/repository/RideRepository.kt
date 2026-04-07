@@ -7,6 +7,7 @@ import dev.filips.twistcounter.data.local.LeanSampleEntity
 import dev.filips.twistcounter.data.local.RideDao
 import dev.filips.twistcounter.data.local.RideDatabase
 import dev.filips.twistcounter.data.local.RideEntity
+import dev.filips.twistcounter.data.local.WaypointDao
 import dev.filips.twistcounter.data.local.toDomain
 import dev.filips.twistcounter.data.local.toEntity
 import dev.filips.twistcounter.domain.model.CornerEvent
@@ -26,7 +27,8 @@ class RideRepository @Inject constructor(
     private val database: RideDatabase,
     private val rideDao: RideDao,
     private val cornerEventDao: CornerEventDao,
-    private val leanSampleDao: LeanSampleDao
+    private val leanSampleDao: LeanSampleDao,
+    private val waypointDao: WaypointDao
 ) {
     fun getAllRides(): Flow<List<Ride>> {
         return rideDao.getAllRides().map { entities ->
@@ -44,6 +46,17 @@ class RideRepository @Inject constructor(
 
     suspend fun deleteRide(rideId: UUID) {
         rideDao.deleteRideWithEvents(rideId.toString())
+        waypointDao.deleteWaypointsForRide(rideId.toString())
+    }
+
+    suspend fun saveWaypoints(rideId: UUID, waypoints: List<dev.filips.twistcounter.domain.model.RideWaypoint>) {
+        if (waypoints.isEmpty()) return
+        val entities = waypoints.map { it.toEntity(rideId.toString()) }
+        waypointDao.insertWaypoints(entities)
+    }
+
+    suspend fun getWaypointsForRide(rideId: UUID): List<dev.filips.twistcounter.domain.model.RideWaypoint> {
+        return waypointDao.getWaypointsForRide(rideId.toString()).map { it.toDomain() }
     }
 
     suspend fun saveCornerEvent(event: CornerEvent) {

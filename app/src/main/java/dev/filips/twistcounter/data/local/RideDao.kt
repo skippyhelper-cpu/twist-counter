@@ -39,6 +39,18 @@ interface RideDao {
 }
 
 @Dao
+interface WaypointDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWaypoints(waypoints: List<dev.filips.twistcounter.data.local.WaypointEntity>)
+
+    @Query("SELECT * FROM waypoints WHERE rideId = :rideId ORDER BY timestamp ASC")
+    suspend fun getWaypointsForRide(rideId: String): List<dev.filips.twistcounter.data.local.WaypointEntity>
+
+    @Query("DELETE FROM waypoints WHERE rideId = :rideId")
+    suspend fun deleteWaypointsForRide(rideId: String)
+}
+
+@Dao
 interface CornerEventDao {
     @Query("SELECT * FROM corner_events WHERE rideId = :rideId ORDER BY startTime ASC")
     suspend fun getEventsForRide(rideId: String): List<CornerEventEntity>

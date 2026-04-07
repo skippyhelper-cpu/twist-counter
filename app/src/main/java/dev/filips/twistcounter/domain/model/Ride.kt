@@ -14,7 +14,9 @@ data class Ride(
     val cornerCount: Int = 0,
     val maxLeanLeft: Float = 0f,
     val maxLeanRight: Float = 0f,
-    val avgLean: Float = 0f
+    val avgLean: Float = 0f,
+    val maxAccelG: Float = 0f,
+    val maxBrakeG: Float = 0f
 )
 
 data class CornerEvent(

@@ -11,6 +11,7 @@ import dev.filips.twistcounter.data.local.CornerEventDao
 import dev.filips.twistcounter.data.local.LeanSampleDao
 import dev.filips.twistcounter.data.local.RideDao
 import dev.filips.twistcounter.data.local.RideDatabase
+import dev.filips.twistcounter.data.local.WaypointDao
 import javax.inject.Singleton
 
 @Module
@@ -24,7 +25,9 @@ object DatabaseModule {
             context,
             RideDatabase::class.java,
             "twistcounter_db"
-        ).build()
+        )
+        .fallbackToDestructiveMigration() // Clear data on version change (v1 to v2 adds waypoints)
+        .build()
     }
 
     @Provides
@@ -40,5 +43,10 @@ object DatabaseModule {
     @Provides
     fun provideLeanSampleDao(database: RideDatabase): LeanSampleDao {
         return database.leanSampleDao()
+    }
+
+    @Provides
+    fun provideWaypointDao(database: RideDatabase): WaypointDao {
+        return database.waypointDao()
     }
 }

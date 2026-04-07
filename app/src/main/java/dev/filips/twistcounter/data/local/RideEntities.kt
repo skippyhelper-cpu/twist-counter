@@ -21,7 +21,9 @@ data class RideEntity(
     val cornerCount: Int,
     val maxLeanLeft: Float,
     val maxLeanRight: Float,
-    val avgLean: Float
+    val avgLean: Float,
+    val maxAccelG: Float,
+    val maxBrakeG: Float
 )
 
 @Entity(
@@ -69,6 +71,31 @@ data class LeanSampleEntity(
     val speedKmh: Float
 )
 
+@Entity(
+    tableName = "waypoints",
+    foreignKeys = [
+        ForeignKey(
+            entity = RideEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["rideId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("rideId")]
+)
+data class WaypointEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val rideId: String,
+    val latitude: Double,
+    val longitude: Double,
+    val timestamp: Long,
+    val leanAngle: Float,
+    val speedKmh: Float,
+    val accelG: Float,
+    val isCorner: Boolean
+)
+
 // Extension functions to convert between domain models and entities
 
 fun RideEntity.toDomain() = dev.filips.twistcounter.domain.model.Ride(
@@ -82,7 +109,9 @@ fun RideEntity.toDomain() = dev.filips.twistcounter.domain.model.Ride(
     cornerCount = cornerCount,
     maxLeanLeft = maxLeanLeft,
     maxLeanRight = maxLeanRight,
-    avgLean = avgLean
+    avgLean = avgLean,
+    maxAccelG = maxAccelG,
+    maxBrakeG = maxBrakeG
 )
 
 fun dev.filips.twistcounter.domain.model.Ride.toEntity() = RideEntity(
@@ -96,7 +125,9 @@ fun dev.filips.twistcounter.domain.model.Ride.toEntity() = RideEntity(
     cornerCount = cornerCount,
     maxLeanLeft = maxLeanLeft,
     maxLeanRight = maxLeanRight,
-    avgLean = avgLean
+    avgLean = avgLean,
+    maxAccelG = maxAccelG,
+    maxBrakeG = maxBrakeG
 )
 
 fun CornerEventEntity.toDomain() = dev.filips.twistcounter.domain.model.CornerEvent(
@@ -119,4 +150,25 @@ fun dev.filips.twistcounter.domain.model.CornerEvent.toEntity() = CornerEventEnt
     durationSeconds = durationSeconds,
     gpsLat = gpsLat,
     gpsLng = gpsLng
+)
+
+fun WaypointEntity.toDomain() = dev.filips.twistcounter.domain.model.RideWaypoint(
+    latitude = latitude,
+    longitude = longitude,
+    timestamp = timestamp,
+    leanAngle = leanAngle,
+    speedKmh = speedKmh,
+    accelG = accelG,
+    isCorner = isCorner
+)
+
+fun dev.filips.twistcounter.domain.model.RideWaypoint.toEntity(rideId: String) = WaypointEntity(
+    rideId = rideId,
+    latitude = latitude,
+    longitude = longitude,
+    timestamp = timestamp,
+    leanAngle = leanAngle,
+    speedKmh = speedKmh,
+    accelG = accelG,
+    isCorner = isCorner
 )

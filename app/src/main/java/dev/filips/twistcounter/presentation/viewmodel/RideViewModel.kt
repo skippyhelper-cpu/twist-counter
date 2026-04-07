@@ -15,6 +15,7 @@ import dev.filips.twistcounter.domain.model.LeanHistogram
 import dev.filips.twistcounter.domain.model.LeanSample
 import dev.filips.twistcounter.domain.model.Ride
 import dev.filips.twistcounter.domain.model.RideSummary
+import dev.filips.twistcounter.domain.model.RideTrack
 import dev.filips.twistcounter.domain.service.RideForegroundService
 import dev.filips.twistcounter.domain.usecase.LocationManagerUseCase
 import dev.filips.twistcounter.domain.usecase.LocationStats
@@ -64,6 +65,17 @@ class RideViewModel @Inject constructor(
     val maxLeanRight: StateFlow<Float> = sensorManagerUseCase.maxLeanRightFlow
     val maxLeanRightLiveData = maxLeanRight.asLiveData()
     
+    // Acceleration/braking stats
+    val maxAccelG: StateFlow<Float> = sensorManagerUseCase.maxAccelGFlow
+    val maxAccelGLiveData = maxAccelG.asLiveData()
+    
+    val maxBrakeG: StateFlow<Float> = sensorManagerUseCase.maxBrakeGFlow
+    val maxBrakeGLiveData = maxBrakeG.asLiveData()
+    
+    // Ride track for map visualization
+    val rideTrack: StateFlow<RideTrack> = locationManagerUseCase.rideTrack
+    val rideTrackLiveData = rideTrack.asLiveData()
+    
     // Location stats
     val currentSpeed: StateFlow<Float> = locationManagerUseCase.currentSpeed
     val currentSpeedLiveData = currentSpeed.asLiveData()
@@ -81,6 +93,15 @@ class RideViewModel @Inject constructor(
     val currentRideSummary: StateFlow<RideSummary?> = _currentRideSummary.asStateFlow()
     val currentRideSummaryLiveData = currentRideSummary.asLiveData()
     
+    // Historic ride viewing
+    private val _historicRideSummary = MutableStateFlow<RideSummary?>(null)
+    val historicRideSummary: StateFlow<RideSummary?> = _historicRideSummary.asStateFlow()
+    val historicRideSummaryLiveData = historicRideSummary.asLiveData()
+    
+    private val _historicRideTrack = MutableStateFlow<RideTrack?>(null)
+    val historicRideTrack: StateFlow<RideTrack?> = _historicRideTrack.asStateFlow()
+    val historicRideTrackLiveData = historicRideTrack.asLiveData()
+    
     private var currentRideId: UUID? = null
     private val cornerEvents = mutableListOf<CornerEvent>()
     private val leanSamples = mutableListOf<LeanSample>()
@@ -94,6 +115,59 @@ class RideViewModel @Inject constructor(
                 RideForegroundService.updateCornerCount(count)
             }
         }
+    }
+    
+    fun loadHistoricRide(rideId: UUID) {
+        viewModelScope.launch {
+            // Load ride from database
+            val ride = rideRepository.getRideById(rideId)
+            if (ride != null) {
+                // Create summary
+                val summary = RideSummary(
+                    ride = ride,
+                    cornerEvents = emptyList(),
+                    leanHistogram = calculateHistoricLeanHistogram(ride)
+                )
+                _historicRideSummary.value = summary
+                
+                // Load waypoints for map
+                val waypoints = rideRepository.getWaypointsForRide(rideId)
+                _historicRideTrack.value = RideTrack(waypoints)
+            }
+        }
+    }
+    
+    private fun calculateHistoricLeanHistogram(ride: Ride): LeanHistogram {
+        val buckets = listOf(
+            LeanBucket(0f, 10f, 0),
+            LeanBucket(10f, 20f, 0),
+            LeanBucket(20f, 30f, 0),
+            LeanBucket(30f, 40f, 0),
+            LeanBucket(40f, 50f, 0),
+            LeanBucket(50f, 90f, 0)
+        ).toMutableList()
+        
+        // Use max lean values to estimate distribution
+        val maxLean = maxOf(ride.maxLeanLeft, ride.maxLeanRight)
+        if (maxLean > 0) {
+            val bucketIndex = when {
+                maxLean < 10 -> 0
+                maxLean < 20 -> 1
+                maxLean < 30 -> 2
+                maxLean < 40 -> 3
+                maxLean < 50 -> 4
+                else -> 5
+            }
+            val count = ride.cornerCount.coerceAtLeast(1)
+            buckets[bucketIndex] = buckets[bucketIndex].copy(count = count)
+        }
+        
+        return LeanHistogram(buckets)
+    }
+    
+    fun clearHistoricRide() {
+        _historicRideSummary.value = null
+        _historicRideTrack.value = null
     }
     
     fun loadRideHistory() {
@@ -128,6 +202,9 @@ class RideViewModel @Inject constructor(
         leanSamples.clear()
         cornerEvents.clear()
 
+        // CRITICAL: Reset stats BEFORE changing state so fragment sees clean values
+        sensorManagerUseCase.resetRideStats()
+        
         _rideState.value = RideState.InProgress
         
         // Set up corner event persistence callback
@@ -142,7 +219,7 @@ class RideViewModel @Inject constructor(
             locationManagerUseCase.updateSpeedFromAccelerometer(accelMagnitude, dt)
         }
         
-        // Start sensor tracking
+        // Start sensor tracking (sensors restart here)
         sensorManagerUseCase.startRideTracking(viewModelScope)
         
         // Start location tracking
@@ -158,6 +235,9 @@ class RideViewModel @Inject constructor(
     
     fun endRide() {
         _rideState.value = RideState.Finished
+        
+        // Capture waypoints BEFORE stopping location tracking
+        val currentWaypoints = locationManagerUseCase.rideTrack.value.waypoints
         
         // Clear corner detection callback
         sensorManagerUseCase.onCornerDetected = null
@@ -194,7 +274,9 @@ class RideViewModel @Inject constructor(
             maxLeanRight = rideStats.maxLeanRight,
             avgLean = if (rideStats.cornerCount > 0) {
                 (rideStats.maxLeanLeft + rideStats.maxLeanRight) / 2f
-            } else 0f
+            } else 0f,
+            maxAccelG = maxAccelG.value,
+            maxBrakeG = maxBrakeG.value
         )
         
         // Build RideSummary from in-memory data BEFORE saving
@@ -227,6 +309,11 @@ class RideViewModel @Inject constructor(
             // Save lean samples if available
             if (leanSamples.isNotEmpty()) {
                 rideRepository.saveLeanSamples(leanSamples)
+            }
+            
+            // Save waypoints for map display
+            if (currentWaypoints.isNotEmpty()) {
+                rideRepository.saveWaypoints(currentRideId!!, currentWaypoints)
             }
         }
     }

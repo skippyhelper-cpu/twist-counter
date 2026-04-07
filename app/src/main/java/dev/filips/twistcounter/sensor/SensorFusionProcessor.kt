@@ -32,15 +32,19 @@ class SensorFusionProcessor(
         }
         lastTimestamp = reading.timestamp
 
-        // Gyroscope integration (rate of change of roll)
-        val gyroRate = reading.gyroZ // rad/s, positive = leaning right
+        // Gyroscope: rotation rate around X axis (roll for vertical phone in breast pocket)
+        // Note: gyroX positive = rolling LEFT (when phone facing chest)
+        // We negate to make positive = leaning RIGHT (motorcycle convention)
+        val gyroRate = -reading.gyroX // rad/s, positive = leaning right
         val gyroDelta = gyroRate * dt
 
         // Accelerometer roll calculation (gravity vector)
+        // For breast pocket: phone vertical, screen facing chest
+        // Roll = atan2(-accelX, accelY) measures left/right lean angle
+        // When leaning right: accelX goes negative, so we negate for positive angle
         val accelRoll = atan2(
-            reading.accelY.toDouble(),
-            sqrt(reading.accelX.toDouble() * reading.accelX.toDouble() + 
-                 reading.accelZ.toDouble() * reading.accelZ.toDouble())
+            -reading.accelX.toDouble(),  // Negate: left/right gravity component
+            reading.accelY.toDouble()   // Vertical gravity component
         )
 
         // Complementary filter
@@ -75,17 +79,21 @@ class SensorFusionProcessor(
     fun calibrate(readings: List<SensorReading>) {
         if (readings.isEmpty()) return
 
-        // Average the current angle over calibration period
+        // Average the accel roll over calibration period
+        // For breast pocket: atan2(-accelX, accelY) gives roll angle
         var sumAngles = 0f
         readings.forEach { reading ->
             val accelRoll = atan2(
-                reading.accelY.toDouble(),
-                sqrt(reading.accelX.toDouble() * reading.accelX.toDouble() + 
-                     reading.accelZ.toDouble() * reading.accelZ.toDouble())
+                -reading.accelX.toDouble(),  // Negated for correct sign
+                reading.accelY.toDouble()   // Vertical component
             )
             sumAngles += (accelRoll * RAD_TO_DEG).toFloat()
         }
         calibrationOffset = sumAngles / readings.size
+        
+        // CRITICAL: Seed currentAngle to match calibration baseline
+        currentAngle = (calibrationOffset / RAD_TO_DEG)
+        
         isCalibrated = true
     }
 

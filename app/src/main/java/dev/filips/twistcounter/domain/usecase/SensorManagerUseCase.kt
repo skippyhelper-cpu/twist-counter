@@ -98,6 +98,19 @@ class SensorManagerUseCase @Inject constructor(
         5 to 0   // 50°+
     )
     
+    // Longitudinal acceleration (accelZ for breast pocket)
+    // Positive = acceleration, Negative = braking
+    private var maxAccelG = 0f  // Max forward acceleration (Gs)
+    private var maxBrakeG = 0f  // Max braking (Gs, stored as positive number)
+    private val _maxAccelGFlow = MutableStateFlow(0f)
+    private val _maxBrakeGFlow = MutableStateFlow(0f)
+    val maxAccelGFlow: StateFlow<Float> = _maxAccelGFlow.asStateFlow()
+    val maxBrakeGFlow: StateFlow<Float> = _maxBrakeGFlow.asStateFlow()
+    
+    // Current instantaneous acceleration for waypoint capture
+    private val _currentAccelG = MutableStateFlow(0f)
+    val currentAccelG: StateFlow<Float> = _currentAccelG.asStateFlow()
+    
     // Auto-recalibration state
     private var baselineLeanAngle: Float = 0f // The calibrated zero-lean reference
     private var driftAccumulator: Float = 0f
@@ -177,6 +190,7 @@ class SensorManagerUseCase @Inject constructor(
         fusionProcessor.reset()
         _calibrationProgress.value = 0f
         _isCalibrated.value = false
+        _currentLeanAngle.value = 0f
         baselineLeanAngle = 0f
 
         startSensors()
@@ -215,9 +229,24 @@ class SensorManagerUseCase @Inject constructor(
             // Perform calibration
             fusionProcessor.calibrate(calibrationReadings)
             baselineLeanAngle = fusionProcessor.getCalibrationOffset()
+            
+            // CRITICAL: Stop sensors BEFORE marking calibrated to prevent race
+            // where sensor thread processes readings between calibration and ride start
+            sensorManager.unregisterListener(sensorListener)
+            
+            // Reset tracking stats while sensors are stopped
+            maxLeanLeft = 0f
+            maxLeanRight = 0f
+            _maxLeanLeftFlow.value = 0f
+            _maxLeanRightFlow.value = 0f
+            cornerCount = 0
+            _cornerCountFlow.value = 0
+            cornerDetector.reset()
+            _currentLeanAngle.value = 0f
+            
             _isCalibrated.value = true
             _calibrationProgress.value = 1f
-            onComplete() // notify immediately when done
+            onComplete() // startRideTracking() will restart sensors
         }
     }
 
@@ -287,6 +316,23 @@ class SensorManagerUseCase @Inject constructor(
         } else if (leanReading.leanAngle > 0 && leanReading.leanAngle > maxLeanRight) {
             maxLeanRight = leanReading.leanAngle
             _maxLeanRightFlow.value = maxLeanRight
+        }
+        
+        // Track longitudinal acceleration (accelZ for breast pocket)
+        // accelZ: positive = acceleration (into chest), negative = braking (away from chest)
+        // Convert to Gs (9.8 m/s² = 1G), subtract 1G gravity component
+        val accelZG = reading.accelZ / 9.8f
+        val longitudinalAccel = accelZG - 1f  // Remove gravity, positive = accel, negative = brake
+        
+        _currentAccelG.value = longitudinalAccel
+        
+        if (longitudinalAccel > maxAccelG) {
+            maxAccelG = longitudinalAccel
+            _maxAccelGFlow.value = maxAccelG
+        }
+        if (-longitudinalAccel > maxBrakeG) {
+            maxBrakeG = -longitudinalAccel
+            _maxBrakeGFlow.value = maxBrakeG
         }
         
         // Auto-recalibration: monitor for drift from baseline
@@ -412,6 +458,26 @@ class SensorManagerUseCase @Inject constructor(
         recalibrationJob = null
         isRecalibrating = false
         cornerDetector.isPaused = false
+    }
+    
+    /**
+     * Reset all ride tracking stats to zero and emit to StateFlows.
+     * Must be called BEFORE ride starts so fragment observes clean values.
+     */
+    fun resetRideStats() {
+        cornerCount = 0
+        maxLeanLeft = 0f
+        maxLeanRight = 0f
+        _cornerCountFlow.value = 0
+        _maxLeanLeftFlow.value = 0f
+        _maxLeanRightFlow.value = 0f
+        _currentLeanAngle.value = 0f
+        
+        // Reset acceleration/braking stats
+        maxAccelG = 0f
+        maxBrakeG = 0f
+        _maxAccelGFlow.value = 0f
+        _maxBrakeGFlow.value = 0f
     }
     
     fun getRideStats(): RideStats {

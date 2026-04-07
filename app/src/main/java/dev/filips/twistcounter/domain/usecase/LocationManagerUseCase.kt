@@ -16,9 +16,12 @@ import android.content.Context
 import android.Manifest
 import android.content.pm.PackageManager
 import android.location.Location
+import dev.filips.twistcounter.domain.model.RideWaypoint
+import dev.filips.twistcounter.domain.model.RideTrack
 
 /**
  * Manages GPS location tracking for speed and distance.
+ * Also captures waypoints with sensor data for color-coded map display.
  */
 @Singleton
 class LocationManagerUseCase @Inject constructor(
@@ -38,6 +41,11 @@ class LocationManagerUseCase @Inject constructor(
     
     private val _maxSpeed = MutableStateFlow(0f)
     val maxSpeed: StateFlow<Float> = _maxSpeed.asStateFlow()
+    
+    // Waypoints for map visualization
+    private val _waypoints = mutableListOf<RideWaypoint>()
+    private val _rideTrack = MutableStateFlow(RideTrack())
+    val rideTrack: StateFlow<RideTrack> = _rideTrack.asStateFlow()
     
     private var lastLocation: Location? = null
     private var speedSamples = mutableListOf<Float>()
@@ -72,6 +80,8 @@ class LocationManagerUseCase @Inject constructor(
         speedSamples.clear()
         accelEstimatedSpeed = 0f
         lastAccelMagnitude = 0f
+        _waypoints.clear()
+        _rideTrack.value = RideTrack()
         
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
@@ -113,6 +123,23 @@ class LocationManagerUseCase @Inject constructor(
         // Track average speed
         speedSamples.add(speedKmh)
         _avgSpeed.value = speedSamples.sum() / speedSamples.size
+        
+        // Capture waypoint with sensor data
+        val leanAngle = sensorManagerUseCase.currentLeanAngle.value
+        val accelG = sensorManagerUseCase.currentAccelG.value
+        
+        val waypoint = RideWaypoint(
+            latitude = location.latitude,
+            longitude = location.longitude,
+            timestamp = location.time,
+            leanAngle = leanAngle,
+            speedKmh = speedKmh,
+            accelG = accelG,
+            isCorner = kotlin.math.abs(leanAngle) > 15f
+        )
+        
+        _waypoints.add(waypoint)
+        _rideTrack.value = RideTrack(_waypoints.toList())
     }
     
     /**
